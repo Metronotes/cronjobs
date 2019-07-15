@@ -1,16 +1,18 @@
 #!/bin/bash
 
-cluster_configs=`ls -qd /home/resizer/clusters_config/*`
+current_time=`date +%H`
 
-for i in "${cluster_configs[@]}"
-do
-	. "$i"
-	if [[ `date +%H` -ge $on_hour && `date +%H` -lt $off_hour ]] 
+for filename in /home/resizer/clusters_config/*.conf; do
+	[ -e "$filename" ] || continue
+	. $filename
+	if [[ ${current_time#0} -ge $on_hour && ${current_time#0} -lt $off_hour ]]
 	then
 		echo "SCALING UP THE CLUSTER. LET'S DEPLOY AND WIN THE INTERNET"
-		`gcloud container clusters resize -q --num-nodes $on_node_num $cluster_name --zone $zone --project $project` 
+		`gcloud config set account cluster-resizer@$project.iam.gserviceaccount.com`
+		`gcloud container clusters resize -q --num-nodes $on_node_num --zone $zone --project $project $cluster_name`
 	else
 		echo "SCALING DOWN THE CLUSTER FOR SAVING YOUR DALLARZZZZ"
-		`gcloud container clusters resize -q --num-nodes $off_node_num $cluster_name --zone $zone --project $project` 
+		`gcloud config set account cluster-resizer@$project.iam.gserviceaccount.com`
+		`gcloud container clusters resize -q --num-nodes $off_node_num --zone $zone --project $project $cluster_name `
 	fi
 done
